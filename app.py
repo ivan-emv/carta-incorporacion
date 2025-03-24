@@ -1,7 +1,6 @@
 import streamlit as st
 from docx import Document
 from io import BytesIO
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.shared import Pt
 from datetime import datetime
 
@@ -35,12 +34,11 @@ def reemplazar_campos(template_path, reemplazos):
     for para in doc.paragraphs:
         for key, value in reemplazos.items():
             if key in para.text:
+                para.text = para.text.replace(key, value)
                 for run in para.runs:
-                    if key in run.text:
-                        run.text = run.text.replace(key, value)
-                        run.font.name = "Arial"
-                        run.font.size = Pt(11)
-                        run.bold = False
+                    run.font.name = "Arial"
+                    run.font.size = Pt(11)
+                    run.bold = False
 
     for table in doc.tables:
         for row in table.rows:
