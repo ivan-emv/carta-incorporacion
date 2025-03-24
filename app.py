@@ -1,77 +1,100 @@
 import streamlit as st
-from datetime import datetime
 from docx import Document
-import os
+from io import BytesIO
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from datetime import datetime
 
-# Función para cargar el archivo y modificar los campos
-def modificar_carta(archivo, nombre, localizador, fecha, ciudad, trayecto, hora_presentacion, hora_salida, punto_encuentro, direccion):
-    doc = Document(archivo)
-    
-    # Reemplazar campos
-    for parrafo in doc.paragraphs:
-        parrafo.text = parrafo.text.replace('(INSERTENOMBRE)', nombre)
-        parrafo.text = parrafo.text.replace('(LOCALIZADOR)', localizador)
-        parrafo.text = parrafo.text.replace('(INSERTEFECHA)', fecha)
-        parrafo.text = parrafo.text.replace('(CIUDAD)', ciudad)
-        parrafo.text = parrafo.text.replace('(INSERTETRAYECTO)', trayecto)
-        parrafo.text = parrafo.text.replace('(HORAPRESENTACION)', hora_presentacion)
-        parrafo.text = parrafo.text.replace('(HORASALIDA)', hora_salida)
-        parrafo.text = parrafo.text.replace('(PUNTOENCUENTRO)', punto_encuentro)
-        parrafo.text = parrafo.text.replace('(INSERTEDIRECCION)', direccion)
-    
-    # Guardar documento modificado
-    nombre_archivo = f"{localizador}.docx"
-    doc.save(nombre_archivo)
-    return nombre_archivo
+# Diccionario para asociar idioma con plantilla
+PLANTILLAS = {
+    "Español": "Carta Tipo - Incorporaciones.docx",
+    "Portugués": "Carta Tipo - IncorporacionesPOR.docx",
+    "Inglés": "Carta Tipo - IncorporacionesENG.docx",
+}
 
-# Interfaz de usuario en Streamlit
-def main():
-    st.title("Generador de Carta Tipo")
+# Función para reemplazar texto en el documento
+def reemplazar_campos(template_path, reemplazos):
+    doc = Document(template_path)
 
-    # Selección de idioma
-    idioma = st.selectbox("Selecciona el idioma", ("Español", "Portugués", "Inglés"))
-    
-    # Archivos correspondientes a cada idioma
-    if idioma == "Español":
-        archivo = "Carta Tipo - Incorporaciones.docx"
-    elif idioma == "Portugués":
-        archivo = "Carta Tipo - IncorporacionesPOR.docx"
-    else:
-        archivo = "Carta Tipo - IncorporacionesENG.docx"
+    for para in doc.paragraphs:
+        for key, value in reemplazos.items():
+            if key in para.text:
+                for run in para.runs:
+                    if key in run.text:
+                        run.text = run.text.replace(key, value)
 
-    # Cargar el archivo
-    archivo_path = os.path.join('path/to/your/files', archivo)
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for key, value in reemplazos.items():
+                    if key in cell.text:
+                        cell.text = cell.text.replace(key, value)
 
-    # Campos de entrada
-    nombre = st.text_input("Nombre")
-    localizador = st.text_input("Localizador")
-    fecha = st.text_input("Fecha (DD/MM/AAAA)", "")
-    ciudad = st.text_input("Ciudad")
-    trayecto = st.text_input("Trayecto")
-    hora_presentacion = st.text_input("Hora de Presentación")
-    hora_salida = st.text_input("Hora de Salida")
-    punto_encuentro = st.text_input("Punto de Encuentro")
-    direccion = st.text_input("Dirección")
+    return doc
 
-    # Validación de la fecha
-    try:
-        fecha_obj = datetime.strptime(fecha, "%d/%m/%Y")
-        dia = fecha_obj.strftime("%A")
-    except ValueError:
-        dia = None
+st.title("Generador de Carta de Incorporaciones")
 
-    if dia is None:
-        st.error("La fecha ingresada no es válida. Debe estar en formato DD/MM/AAAA.")
-    else:
-        st.write(f"El día correspondiente es: {dia}")
+idioma = st.selectbox("Seleccione el idioma", list(PLANTILLAS.keys()))
 
-    # Botón para generar la carta
-    if st.button("Generar Carta"):
-        if all([nombre, localizador, fecha, ciudad, trayecto, hora_presentacion, hora_salida, punto_encuentro, direccion]):
-            archivo_generado = modificar_carta(archivo_path, nombre, localizador, fecha, ciudad, trayecto, hora_presentacion, hora_salida, punto_encuentro, direccion)
-            st.success(f"La carta ha sido generada con éxito. Puedes descargarla [aquí](/{archivo_generado}).")
-        else:
-            st.error("Por favor, completa todos los campos.")
+# Campos del formulario
+nombre = st.text_input("Inserte Nombre")
+localizador = st.text_input("Inserte Localizador")
+fecha_input = st.text_input("Inserte Fecha (YYYY-MM-DD)")
+ciudad = st.text_input("Inserte Ciudad")
+trayecto = st.text_input("Inserte Trayecto")
+hora_presentacion = st.text_input("Inserte Hora de Presentación")
+hora_salida = st.text_input("Inserte Hora de Salida")
+punto_encuentro = st.text_input("Inserte Punto de Encuentro")
+direccion = st.text_input("Inserte Dirección")
 
-if __name__ == "__main__":
-    main()
+# Validación de fecha y obtención del día
+try:
+    fecha_obj = datetime.strptime(fecha_input, "%Y-%m-%d")
+    dia_semana = fecha_obj.strftime("%A")  # Día en inglés
+    dias_traducidos = {
+        "Español": {
+            "Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles",
+            "Thursday": "Jueves", "Friday": "Viernes", "Saturday": "Sábado", "Sunday": "Domingo"
+        },
+        "Portugués": {
+            "Monday": "Segunda-feira", "Tuesday": "Terça-feira", "Wednesday": "Quarta-feira",
+            "Thursday": "Quinta-feira", "Friday": "Sexta-feira", "Saturday": "Sábado", "Sunday": "Domingo"
+        },
+        "Inglés": {
+            "Monday": "Monday", "Tuesday": "Tuesday", "Wednesday": "Wednesday",
+            "Thursday": "Thursday", "Friday": "Friday", "Saturday": "Saturday", "Sunday": "Sunday"
+        }
+    }
+    dia_traducido = dias_traducidos[idioma][dia_semana]
+    fecha_valida = True
+except ValueError:
+    st.error("Formato de fecha inválido. Use el formato YYYY-MM-DD.")
+    fecha_valida = False
+
+# Reemplazos si la fecha es válida
+if fecha_valida and st.button("Generar Documento"):
+    reemplazos = {
+        "(INSERTENOMBRE)": nombre,
+        "(LOCALIZADOR)": localizador,
+        "(INSERTEFECHA)": fecha_input,
+        "(DIA)": dia_traducido,
+        "(CIUDAD)": ciudad,
+        "(INSERTETRAYECTO)": trayecto,
+        "(HORAPRESENTACION)": hora_presentacion,
+        "(HORASALIDA)": hora_salida,
+        "(PUNTOENCUENTRO)": punto_encuentro,
+        "(INSERTEDIRECCION)": direccion
+    }
+
+    plantilla = PLANTILLAS[idioma]
+    doc = reemplazar_campos(plantilla, reemplazos)
+
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+
+    st.download_button(
+        label="Descargar Documento",
+        data=buffer,
+        file_name=f"{localizador}.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
