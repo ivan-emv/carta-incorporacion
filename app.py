@@ -28,21 +28,19 @@ MESES_TRADUCIDOS = {
     }
 }
 
-# Función para reemplazar texto en el documento
+# Función para reemplazar solo los textos variables
 def reemplazar_campos(template_path, reemplazos):
     doc = Document(template_path)
-
+    
     for para in doc.paragraphs:
         for key, value in reemplazos.items():
             if key in para.text:
-                inline_text = "".join(run.text for run in para.runs)
-                inline_text = inline_text.replace(key, value)
                 for run in para.runs:
-                    run.text = ""
-                para.runs[0].text = inline_text
-                para.runs[0].font.name = "Arial"
-                para.runs[0].font.size = Pt(11)
-                para.runs[0].bold = False
+                    if key in run.text:
+                        run.text = run.text.replace(key, value)
+                        run.font.name = "Arial"
+                        run.font.size = Pt(11)
+                        run.bold = False
 
     for table in doc.tables:
         for row in table.rows:
