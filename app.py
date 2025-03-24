@@ -27,30 +27,23 @@ MESES_TRADUCIDOS = {
     }
 }
 
-# Función para reemplazar solo los textos variables
+# Función para reemplazar solo los textos variables sin alterar el formato general
 def reemplazar_campos(template_path, reemplazos):
     doc = Document(template_path)
     
     for para in doc.paragraphs:
         for key, value in reemplazos.items():
             if key in para.text:
-                para.text = para.text.replace(key, value)
                 for run in para.runs:
-                    run.font.name = "Arial"
-                    run.font.size = Pt(11)
-                    run.bold = False
-
+                    if key in run.text:
+                        run.text = run.text.replace(key, value)
+    
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 for key, value in reemplazos.items():
                     if key in cell.text:
                         cell.text = cell.text.replace(key, value)
-                        for para in cell.paragraphs:
-                            for run in para.runs:
-                                run.font.name = "Arial"
-                                run.font.size = Pt(11)
-                                run.bold = False
     
     return doc
 
