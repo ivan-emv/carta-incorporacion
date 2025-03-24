@@ -1,7 +1,8 @@
 import streamlit as st
 import docx
-import os
+from docx.shared import Pt
 from datetime import datetime
+import shutil
 
 # Diccionario de traducción de meses
 date_translation = {
@@ -32,7 +33,7 @@ trayecto = st.text_input("Trayecto")
 hora_presentacion = st.text_input("Hora de Presentación")
 hora_salida = st.text_input("Hora de Salida")
 punto_encuentro = st.text_input("Punto de Encuentro")
-direccion = st.text_area("Dirección")
+direccion = st.text_input("Dirección")
 
 if st.button("Generar Carta"):
     try:
@@ -43,24 +44,26 @@ if st.button("Generar Carta"):
         fecha_formateada = f"{fecha_obj.day} - {mes_traducido} - {fecha_obj.year}"
         dia_semana = fecha_obj.strftime("%A")
         
-        # Cargar documento Word
-        doc = docx.Document(doc_file)
-        
-        # Reemplazar variables en el documento
-        for para in doc.paragraphs:
-            para.text = para.text.replace("(INSERTENOMBRE)", nombre)
-            para.text = para.text.replace("(LOCALIZADOR)", localizador)
-            para.text = para.text.replace("(INSERTEFECHA)", fecha_formateada)
-            para.text = para.text.replace("(DIA)", dia_semana)
-            para.text = para.text.replace("(CIUDAD)", ciudad)
-            para.text = para.text.replace("(INSERTETRAYECTO)", trayecto)
-            para.text = para.text.replace("(HORAPRESENTACION)", hora_presentacion)
-            para.text = para.text.replace("(HORASALIDA)", hora_salida)
-            para.text = para.text.replace("(PUNTOENCUENTRO)", punto_encuentro)
-            para.text = para.text.replace("(INSERTEDIRECCION)", direccion)
-        
-        # Guardar documento con el nombre del localizador
+        # Copiar documento base para no modificar el original
         output_filename = f"{localizador}.docx"
+        shutil.copy(doc_file, output_filename)
+        doc = docx.Document(output_filename)
+        
+        # Reemplazar variables sin afectar formato ni imágenes
+        for para in doc.paragraphs:
+            for run in para.runs:
+                run.text = run.text.replace("(INSERTENOMBRE)", nombre)
+                run.text = run.text.replace("(LOCALIZADOR)", localizador)
+                run.text = run.text.replace("(INSERTEFECHA)", fecha_formateada)
+                run.text = run.text.replace("(DIA)", dia_semana)
+                run.text = run.text.replace("(CIUDAD)", ciudad)
+                run.text = run.text.replace("(INSERTETRAYECTO)", trayecto)
+                run.text = run.text.replace("(HORAPRESENTACION)", hora_presentacion)
+                run.text = run.text.replace("(HORASALIDA)", hora_salida)
+                run.text = run.text.replace("(PUNTOENCUENTRO)", punto_encuentro)
+                run.text = run.text.replace("(INSERTEDIRECCION)", direccion)
+        
+        # Guardar documento con modificaciones
         doc.save(output_filename)
         
         # Permitir descarga del archivo
