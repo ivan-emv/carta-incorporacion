@@ -2,6 +2,7 @@ import streamlit as st
 from docx import Document
 from io import BytesIO
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.shared import Pt
 from datetime import datetime
 
 # Diccionario para asociar idioma con plantilla
@@ -34,11 +35,12 @@ def reemplazar_campos(template_path, reemplazos):
     for para in doc.paragraphs:
         for key, value in reemplazos.items():
             if key in para.text:
-                inline_text = "".join(run.text for run in para.runs)
-                inline_text = inline_text.replace(key, value)
                 for run in para.runs:
-                    run.text = ""
-                para.runs[0].text = inline_text
+                    if key in run.text:
+                        run.text = run.text.replace(key, value)
+                        run.bold = False  # Quitar negrita
+                        run.font.name = "Arial"
+                        run.font.size = Pt(11)
 
     for table in doc.tables:
         for row in table.rows:
@@ -46,7 +48,12 @@ def reemplazar_campos(template_path, reemplazos):
                 for key, value in reemplazos.items():
                     if key in cell.text:
                         cell.text = cell.text.replace(key, value)
-
+                        for para in cell.paragraphs:
+                            for run in para.runs:
+                                run.bold = False  # Quitar negrita
+                                run.font.name = "Arial"
+                                run.font.size = Pt(11)
+    
     return doc
 
 st.title("Generador de Carta de Incorporaciones")
