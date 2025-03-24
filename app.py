@@ -1,73 +1,136 @@
 import streamlit as st
-import docx
+from docx import Document
+from io import BytesIO
 from docx.shared import Pt
 from datetime import datetime
-import shutil
+
+# Diccionario para asociar idioma con plantilla
+PLANTILLAS = {
+    "Español": "Carta Tipo - Incorporaciones.docx",
+    "Portugués": "Carta Tipo - IncorporacionesPOR.docx",
+    "Inglés": "Carta Tipo - IncorporacionesENG.docx",
+}
 
 # Diccionario de traducción de meses
-date_translation = {
-    "es": {"January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril", "May": "Mayo", "June": "Junio", "July": "Julio", "August": "Agosto", "September": "Septiembre", "October": "Octubre", "November": "Noviembre", "December": "Diciembre"},
-    "pt": {"January": "Janeiro", "February": "Fevereiro", "March": "Março", "April": "Abril", "May": "Maio", "June": "Junho", "July": "Julho", "August": "Agosto", "September": "Setembro", "October": "Outubro", "November": "Novembro", "December": "Dezembro"},
-    "en": {"January": "January", "February": "February", "March": "March", "April": "April", "May": "May", "June": "June", "July": "July", "August": "August", "September": "September", "October": "October", "November": "November", "December": "December"}
+MESES_TRADUCIDOS = {
+    "Español": {
+        "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril", "05": "Mayo", "06": "Junio",
+        "07": "Julio", "08": "Agosto", "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"
+    },
+    "Portugués": {
+        "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril", "05": "Maio", "06": "Junho",
+        "07": "Julho", "08": "Agosto", "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro"
+    },
+    "Inglés": {
+        "01": "January", "02": "February", "03": "March", "04": "April", "05": "May", "06": "June",
+        "07": "July", "08": "August", "09": "September", "10": "October", "11": "November", "12": "December"
+    }
 }
 
-# Selección del idioma
-st.title("Generador de Cartas de Incorporación")
-idioma = st.selectbox("Seleccione el idioma de la carta", ["Español", "Portugués", "Inglés"])
-idioma_cod = {"Español": "es", "Portugués": "pt", "Inglés": "en"}[idioma]
+# Función para reemplazar solo los textos variables sin alterar el formato general
+def reemplazar_campos(template_path, reemplazos):
+    doc = Document(template_path)
+    
+    for para in doc.paragraphs:
+        for key, value in reemplazos.items():
+            if key in para.text:
+                inline_text = "".join(run.text for run in para.runs)
+                inline_text = inline_text.replace(key, value)
+                for run in para.runs:
+                    run.text = ""
+                para.runs[0].text = inline_text
+                para.runs[0].font.name = "Arial"
+                para.runs[0].font.size = Pt(11)
+                para.runs[0].bold = False
+    
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for key, value in reemplazos.items():
+                    if key in cell.text:
+                        inline_text = "".join(run.text for para in cell.paragraphs for run in para.runs)
+                        inline_text = inline_text.replace(key, value)
+                        for para in cell.paragraphs:
+                            for run in para.runs:
+                                run.text = ""
+                        cell.paragraphs[0].runs[0].text = inline_text
+                        cell.paragraphs[0].runs[0].font.name = "Arial"
+                        cell.paragraphs[0].runs[0].font.size = Pt(11)
+                        cell.paragraphs[0].runs[0].bold = False
+    
+    return doc
 
-doc_files = {
-    "es": "Carta Tipo - Incorporaciones.docx",
-    "pt": "Carta Tipo - IncorporacionesPOR.docx",
-    "en": "Carta Tipo - IncorporacionesENG.docx"
-}
+st.title("Generador de Carta de Incorporaciones")
 
-doc_file = doc_files[idioma_cod]
+idioma = st.selectbox("Seleccione el idioma", list(PLANTILLAS.keys()))
 
 # Campos del formulario
-nombre = st.text_input("Nombre")
-localizador = st.text_input("Localizador")
-fecha_input = st.text_input("Fecha (DD/MM/YYYY)")
-ciudad = st.text_input("Ciudad")
-trayecto = st.text_input("Trayecto")
-hora_presentacion = st.text_input("Hora de Presentación")
-hora_salida = st.text_input("Hora de Salida")
-punto_encuentro = st.text_input("Punto de Encuentro")
-direccion = st.text_input("Dirección")
+nombre = st.text_input("Inserte Nombre")
+localizador = st.text_input("Inserte Localizador")
+fecha_input = st.text_input("Inserte Fecha (DD/MM/YYYY)")
+ciudad = st.text_input("Inserte Ciudad")
+trayecto = st.text_input("Inserte Trayecto")
+hora_presentacion = st.text_input("Inserte Hora de Presentación")
+hora_salida = st.text_input("Inserte Hora de Salida")
+punto_encuentro = st.text_area("Inserte Punto de Encuentro")
+direccion = st.text_input("Inserte Dirección")
 
-if st.button("Generar Carta"):
-    try:
-        # Validar formato de fecha
-        fecha_obj = datetime.strptime(fecha_input, "%d/%m/%Y")
-        mes = fecha_obj.strftime("%B")
-        mes_traducido = date_translation[idioma_cod][mes]
-        fecha_formateada = f"{fecha_obj.day} - {mes_traducido} - {fecha_obj.year}"
-        dia_semana = fecha_obj.strftime("%A")
-        
-        # Copiar documento base para no modificar el original
-        output_filename = f"{localizador}.docx"
-        shutil.copy(doc_file, output_filename)
-        doc = docx.Document(output_filename)
-        
-        # Reemplazar variables sin afectar formato ni imágenes
-        for para in doc.paragraphs:
-            for run in para.runs:
-                run.text = run.text.replace("(INSERTENOMBRE)", nombre)
-                run.text = run.text.replace("(LOCALIZADOR)", localizador)
-                run.text = run.text.replace("(INSERTEFECHA)", fecha_formateada)
-                run.text = run.text.replace("(DIA)", dia_semana)
-                run.text = run.text.replace("(CIUDAD)", ciudad)
-                run.text = run.text.replace("(INSERTETRAYECTO)", trayecto)
-                run.text = run.text.replace("(HORAPRESENTACION)", hora_presentacion)
-                run.text = run.text.replace("(HORASALIDA)", hora_salida)
-                run.text = run.text.replace("(PUNTOENCUENTRO)", punto_encuentro)
-                run.text = run.text.replace("(INSERTEDIRECCION)", direccion)
-        
-        # Guardar documento con modificaciones
-        doc.save(output_filename)
-        
-        # Permitir descarga del archivo
-        with open(output_filename, "rb") as f:
-            st.download_button("Descargar Carta", f, file_name=output_filename)
-    except ValueError:
-        st.error("Formato de fecha incorrecto. Use DD/MM/YYYY.")
+# Validación de fecha y obtención del día y mes en texto
+try:
+    fecha_obj = datetime.strptime(fecha_input, "%d/%m/%Y")
+    dia_semana = fecha_obj.strftime("%A")  # Día en inglés
+    dia_num = fecha_obj.strftime("%d")
+    mes_num = fecha_obj.strftime("%m")
+    anio = fecha_obj.strftime("%Y")
+    
+    dias_traducidos = {
+        "Español": {
+            "Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles",
+            "Thursday": "Jueves", "Friday": "Viernes", "Saturday": "Sábado", "Sunday": "Domingo"
+        },
+        "Portugués": {
+            "Monday": "Segunda-feira", "Tuesday": "Terça-feira", "Wednesday": "Quarta-feira",
+            "Thursday": "Quinta-feira", "Friday": "Sexta-feira", "Saturday": "Sábado", "Sunday": "Domingo"
+        },
+        "Inglés": {
+            "Monday": "Monday", "Tuesday": "Tuesday", "Wednesday": "Wednesday",
+            "Thursday": "Thursday", "Friday": "Friday", "Saturday": "Saturday", "Sunday": "Sunday"
+        }
+    }
+    
+    dia_traducido = dias_traducidos[idioma][dia_semana]
+    mes_traducido = MESES_TRADUCIDOS[idioma][mes_num]
+    fecha_formateada = f"{dia_num} - {mes_traducido} - {anio}"
+    fecha_valida = True
+except ValueError:
+    st.error("Formato de fecha inválido. Use el formato DD/MM/YYYY.")
+    fecha_valida = False
+
+# Reemplazos si la fecha es válida
+if fecha_valida and st.button("Generar Documento"):
+    reemplazos = {
+        "(INSERTENOMBRE)": nombre,
+        "(LOCALIZADOR)": localizador,
+        "(INSERTEFECHA)": fecha_formateada,
+        "(DIA)": dia_traducido,
+        "(CIUDAD)": ciudad,
+        "(INSERTETRAYECTO)": trayecto,
+        "(HORAPRESENTACION)": hora_presentacion,
+        "(HORASALIDA)": hora_salida,
+        "(PUNTOENCUENTRO)": punto_encuentro,
+        "(INSERTEDIRECCION)": direccion
+    }
+
+    plantilla = PLANTILLAS[idioma]
+    doc = reemplazar_campos(plantilla, reemplazos)
+
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+
+    st.download_button(
+        label="Descargar Documento",
+        data=buffer,
+        file_name=f"{localizador}.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
