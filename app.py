@@ -35,12 +35,14 @@ def reemplazar_campos(template_path, reemplazos):
     for para in doc.paragraphs:
         for key, value in reemplazos.items():
             if key in para.text:
+                inline_text = "".join(run.text for run in para.runs)
+                inline_text = inline_text.replace(key, value)
                 for run in para.runs:
-                    if key in run.text:
-                        run.text = run.text.replace(key, value)
-                        run.bold = False  # Quitar negrita
-                        run.font.name = "Arial"
-                        run.font.size = Pt(11)
+                    run.text = ""
+                para.runs[0].text = inline_text
+                para.runs[0].font.name = "Arial"
+                para.runs[0].font.size = Pt(11)
+                para.runs[0].bold = False
 
     for table in doc.tables:
         for row in table.rows:
@@ -50,9 +52,9 @@ def reemplazar_campos(template_path, reemplazos):
                         cell.text = cell.text.replace(key, value)
                         for para in cell.paragraphs:
                             for run in para.runs:
-                                run.bold = False  # Quitar negrita
                                 run.font.name = "Arial"
                                 run.font.size = Pt(11)
+                                run.bold = False
     
     return doc
 
