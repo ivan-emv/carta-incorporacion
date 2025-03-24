@@ -11,6 +11,22 @@ PLANTILLAS = {
     "Inglés": "Carta Tipo - IncorporacionesENG.docx",
 }
 
+# Diccionario de traducción de meses
+MESES_TRADUCIDOS = {
+    "Español": {
+        "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril", "05": "Mayo", "06": "Junio",
+        "07": "Julio", "08": "Agosto", "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"
+    },
+    "Portugués": {
+        "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril", "05": "Maio", "06": "Junho",
+        "07": "Julho", "08": "Agosto", "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro"
+    },
+    "Inglés": {
+        "01": "January", "02": "February", "03": "March", "04": "April", "05": "May", "06": "June",
+        "07": "July", "08": "August", "09": "September", "10": "October", "11": "November", "12": "December"
+    }
+}
+
 # Función para reemplazar texto en el documento
 def reemplazar_campos(template_path, reemplazos):
     doc = Document(template_path)
@@ -48,10 +64,14 @@ hora_salida = st.text_input("Inserte Hora de Salida")
 punto_encuentro = st.text_input("Inserte Punto de Encuentro")
 direccion = st.text_input("Inserte Dirección")
 
-# Validación de fecha y obtención del día
+# Validación de fecha y obtención del día y mes en texto
 try:
     fecha_obj = datetime.strptime(fecha_input, "%d/%m/%Y")
     dia_semana = fecha_obj.strftime("%A")  # Día en inglés
+    dia_num = fecha_obj.strftime("%d")
+    mes_num = fecha_obj.strftime("%m")
+    anio = fecha_obj.strftime("%Y")
+    
     dias_traducidos = {
         "Español": {
             "Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles",
@@ -66,7 +86,10 @@ try:
             "Thursday": "Thursday", "Friday": "Friday", "Saturday": "Saturday", "Sunday": "Sunday"
         }
     }
+    
     dia_traducido = dias_traducidos[idioma][dia_semana]
+    mes_traducido = MESES_TRADUCIDOS[idioma][mes_num]
+    fecha_formateada = f"{dia_num} - {mes_traducido} - {anio}"
     fecha_valida = True
 except ValueError:
     st.error("Formato de fecha inválido. Use el formato DD/MM/YYYY.")
@@ -77,7 +100,7 @@ if fecha_valida and st.button("Generar Documento"):
     reemplazos = {
         "(INSERTENOMBRE)": nombre,
         "(LOCALIZADOR)": localizador,
-        "(INSERTEFECHA)": fecha_input,
+        "(INSERTEFECHA)": fecha_formateada,
         "(DIA)": dia_traducido,
         "(CIUDAD)": ciudad,
         "(INSERTETRAYECTO)": trayecto,
