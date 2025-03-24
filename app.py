@@ -31,26 +31,25 @@ MESES_TRADUCIDOS = {
 def reemplazar_campos(template_path, reemplazos):
     doc = Document(template_path)
     
-    def reemplazar_texto(parrafo, key, value):
-        for run in parrafo.runs:
-            if key in run.text:
-                run.text = run.text.replace(key, value)
-                run.font.name = "Arial"
-                run.font.size = Pt(11)
-                run.bold = False
-
+    def reemplazar_texto_en_parrafo(parrafo, key, value):
+        if key in parrafo.text:
+            nuevo_texto = parrafo.text.replace(key, value)
+            parrafo.clear()
+            run = parrafo.add_run(nuevo_texto)
+            run.font.name = "Arial"
+            run.font.size = Pt(11)
+            run.bold = False
+    
     for para in doc.paragraphs:
         for key, value in reemplazos.items():
-            if key in para.text:
-                reemplazar_texto(para, key, value)
+            reemplazar_texto_en_parrafo(para, key, value)
     
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 for para in cell.paragraphs:
                     for key, value in reemplazos.items():
-                        if key in para.text:
-                            reemplazar_texto(para, key, value)
+                        reemplazar_texto_en_parrafo(para, key, value)
     
     return doc
 
@@ -66,8 +65,8 @@ ciudad = st.text_input("Inserte Ciudad")
 trayecto = st.text_input("Inserte Trayecto")
 hora_presentacion = st.text_input("Inserte Hora de Presentación")
 hora_salida = st.text_input("Inserte Hora de Salida")
-punto_encuentro = st.text_input("Inserte Punto de Encuentro")
-direccion = st.text_area("Inserte Dirección")
+punto_encuentro = st.text_area("Inserte Punto de Encuentro")
+direccion = st.text_input("Inserte Dirección")
 
 # Validación de fecha y obtención del día y mes en texto
 try:
