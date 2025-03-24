@@ -72,8 +72,8 @@ ciudad = st.text_input("Inserte Ciudad")
 trayecto = st.text_input("Inserte Trayecto")
 hora_presentacion = st.text_input("Inserte Hora de Presentación")
 hora_salida = st.text_input("Inserte Hora de Salida")
-punto_encuentro = st.text_area("Inserte Punto de Encuentro")
-direccion = st.text_input("Inserte Dirección")
+punto_encuentro = st.text_input("Inserte Punto de Encuentro")
+direccion = st.text_area("Inserte Dirección")
 
 # Validación de fecha y obtención del día y mes en texto
 try:
@@ -117,7 +117,7 @@ if fecha_valida and st.button("Generar Documento"):
         "(INSERTETRAYECTO)": trayecto,
         "(HORAPRESENTACION)": hora_presentacion,
         "(HORASALIDA)": hora_salida,
-        "(PUNTOENCUENTRO)": punto_encuentro,
+        "(PUNTODEENCUENTRO)": punto_encuentro,
         "(INSERTEDIRECCION)": direccion
     }
 
