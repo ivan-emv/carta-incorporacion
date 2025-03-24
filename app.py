@@ -18,9 +18,11 @@ def reemplazar_campos(template_path, reemplazos):
     for para in doc.paragraphs:
         for key, value in reemplazos.items():
             if key in para.text:
+                inline_text = "".join(run.text for run in para.runs)
+                inline_text = inline_text.replace(key, value)
                 for run in para.runs:
-                    if key in run.text:
-                        run.text = run.text.replace(key, value)
+                    run.text = ""
+                para.runs[0].text = inline_text
 
     for table in doc.tables:
         for row in table.rows:
