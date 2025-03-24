@@ -38,7 +38,7 @@ idioma = st.selectbox("Seleccione el idioma", list(PLANTILLAS.keys()))
 # Campos del formulario
 nombre = st.text_input("Inserte Nombre")
 localizador = st.text_input("Inserte Localizador")
-fecha_input = st.text_input("Inserte Fecha (YYYY-MM-DD)")
+fecha_input = st.text_input("Inserte Fecha (DD/MM/YYYY)")
 ciudad = st.text_input("Inserte Ciudad")
 trayecto = st.text_input("Inserte Trayecto")
 hora_presentacion = st.text_input("Inserte Hora de Presentación")
@@ -48,7 +48,7 @@ direccion = st.text_input("Inserte Dirección")
 
 # Validación de fecha y obtención del día
 try:
-    fecha_obj = datetime.strptime(fecha_input, "%Y-%m-%d")
+    fecha_obj = datetime.strptime(fecha_input, "%d/%m/%Y")
     dia_semana = fecha_obj.strftime("%A")  # Día en inglés
     dias_traducidos = {
         "Español": {
@@ -67,7 +67,7 @@ try:
     dia_traducido = dias_traducidos[idioma][dia_semana]
     fecha_valida = True
 except ValueError:
-    st.error("Formato de fecha inválido. Use el formato YYYY-MM-DD.")
+    st.error("Formato de fecha inválido. Use el formato DD/MM/YYYY.")
     fecha_valida = False
 
 # Reemplazos si la fecha es válida
