@@ -1,9 +1,7 @@
 import streamlit as st
 from docx import Document
 from io import BytesIO
-import zipfile
-import shutil
-import os
+from docx.shared import Pt
 from datetime import datetime
 
 # Diccionario para asociar idioma con plantilla
@@ -13,43 +11,48 @@ PLANTILLAS = {
     "Inglés": "Carta Tipo - IncorporacionesENG.docx",
 }
 
-# Función para modificar XML directamente sin alterar el formato
-def reemplazar_texto_xml(docx_path, reemplazos):
-    temp_dir = "temp_docx"
-    temp_docx = "temp_modified.docx"
+# Diccionario de traducción de meses
+MESES_TRADUCIDOS = {
+    "Español": {
+        "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril", "05": "Mayo", "06": "Junio",
+        "07": "Julio", "08": "Agosto", "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"
+    },
+    "Portugués": {
+        "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril", "05": "Maio", "06": "Junho",
+        "07": "Julho", "08": "Agosto", "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro"
+    },
+    "Inglés": {
+        "01": "January", "02": "February", "03": "March", "04": "April", "05": "May", "06": "June",
+        "07": "July", "08": "August", "09": "September", "10": "October", "11": "November", "12": "December"
+    }
+}
+
+# Función para reemplazar solo los textos variables sin alterar el formato general
+def reemplazar_campos(template_path, reemplazos):
+    doc = Document(template_path)
     
-    # Extraer el contenido del .docx (que es un archivo .zip)
-    with zipfile.ZipFile(docx_path, 'r') as zip_ref:
-        zip_ref.extractall(temp_dir)
+    def reemplazar_texto_en_runs(runs, key, value):
+        texto_completo = "".join(run.text for run in runs)
+        if key in texto_completo:
+            texto_modificado = texto_completo.replace(key, value)
+            runs[0].text = texto_modificado
+            for i in range(1, len(runs)):
+                runs[i].text = ""
     
-    # Buscar y modificar TODOS los archivos XML en el documento (para asegurar el reemplazo en todas las secciones)
-    for root, _, files in os.walk(temp_dir):
-        for file in files:
-            if file.endswith(".xml"):
-                xml_path = os.path.join(root, file)
-                with open(xml_path, "r", encoding="utf-8") as f:
-                    xml_content = f.read()
-                
-                # Reemplazar los textos asegurando que no se corrompa el XML
+    for para in doc.paragraphs:
+        for key, value in reemplazos.items():
+            if key in para.text:
+                reemplazar_texto_en_runs(para.runs, key, value)
+    
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
                 for key, value in reemplazos.items():
-                    xml_content = xml_content.replace(f"I {key}", value)  # Manejar formato "I (PUNTODEENCUENTRO)"
-                    xml_content = xml_content.replace(key, value)
-                
-                # Escribir el archivo modificado
-                with open(xml_path, "w", encoding="utf-8") as f:
-                    f.write(xml_content)
+                    if key in cell.text:
+                        for para in cell.paragraphs:
+                            reemplazar_texto_en_runs(para.runs, key, value)
     
-    # Volver a comprimir el .docx modificado
-    with zipfile.ZipFile(temp_docx, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for foldername, subfolders, filenames in os.walk(temp_dir):
-            for filename in filenames:
-                file_path = os.path.join(foldername, filename)
-                zipf.write(file_path, os.path.relpath(file_path, temp_dir))
-    
-    # Limpiar archivos temporales
-    shutil.rmtree(temp_dir)
-    
-    return temp_docx
+    return doc
 
 st.title("Generador de Carta de Incorporaciones")
 
@@ -89,12 +92,9 @@ try:
         }
     }
     
-    mes_traducido = {
-        "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril", "05": "Mayo", "06": "Junio",
-        "07": "Julio", "08": "Agosto", "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"
-    }
-    
-    fecha_formateada = f"{dia_num} - {mes_traducido[mes_num]} - {anio}"
+    dia_traducido = dias_traducidos[idioma][dia_semana]
+    mes_traducido = MESES_TRADUCIDOS[idioma][mes_num]
+    fecha_formateada = f"{dia_num} - {mes_traducido} - {anio}"
     fecha_valida = True
 except ValueError:
     st.error("Formato de fecha inválido. Use el formato DD/MM/YYYY.")
@@ -106,7 +106,7 @@ if fecha_valida and st.button("Generar Documento"):
         "(INSERTENOMBRE)": nombre,
         "(LOCALIZADOR)": localizador,
         "(INSERTEFECHA)": fecha_formateada,
-        "(DIA)": dias_traducidos[idioma][dia_semana],
+        "(DIA)": dia_traducido,
         "(CIUDAD)": ciudad,
         "(INSERTETRAYECTO)": trayecto,
         "(HORAPRESENTACION)": hora_presentacion,
@@ -114,16 +114,17 @@ if fecha_valida and st.button("Generar Documento"):
         "(PUNTODEENCUENTRO)": punto_encuentro,
         "(INSERTEDIRECCION)": direccion
     }
-    
+
     plantilla = PLANTILLAS[idioma]
-    docx_modificado = reemplazar_texto_xml(plantilla, reemplazos)
-    
-    with open(docx_modificado, "rb") as file:
-        st.download_button(
-            label="Descargar Documento",
-            data=file,
-            file_name=f"{localizador}.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
-    
-    os.remove(docx_modificado)
+    doc = reemplazar_campos(plantilla, reemplazos)
+
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+
+    st.download_button(
+        label="Descargar Documento",
+        data=buffer,
+        file_name=f"{localizador}.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
