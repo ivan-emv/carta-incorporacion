@@ -6,6 +6,7 @@ import re
 import shutil
 import os
 from xml.etree import ElementTree as ET
+from datetime import datetime  # ✅ Se asegura la importación correcta
 
 # Diccionario para asociar idioma con plantilla
 PLANTILLAS = {
@@ -68,7 +69,7 @@ direccion = st.text_area("Inserte Dirección")
 
 # Validación de fecha y obtención del día y mes en texto
 try:
-    fecha_obj = datetime.strptime(fecha_input, "%d/%m/%Y")
+    fecha_obj = datetime.strptime(fecha_input, "%d/%m/%Y")  # ✅ Se corrige para que datetime esté correctamente definido
     dia_semana = fecha_obj.strftime("%A")  # Día en inglés
     dia_num = fecha_obj.strftime("%d")
     mes_num = fecha_obj.strftime("%m")
