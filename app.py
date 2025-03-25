@@ -57,7 +57,6 @@ def reemplazar_campos(template_path, reemplazos):
 st.title("Generador de Carta de Incorporaciones")
 
 # ✅ Configuración de la página
-st.set_page_config(page_title="Generador de Carta de Incorporaciones", layout="wide")
 
 # 🔧 Ocultar la barra superior y el menú de Streamlit
 hide_streamlit_style = """
