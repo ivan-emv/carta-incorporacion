@@ -56,6 +56,16 @@ def reemplazar_campos(template_path, reemplazos):
 
 st.title("Generador de Carta de Incorporaciones")
 
+# 🔧 Ocultar la barra superior y el menú de Streamlit
+hide_streamlit_style = """
+    <style>
+        #MainMenu {visibility: hidden;}
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 idioma = st.selectbox("Seleccione el idioma", list(PLANTILLAS.keys()))
 
 # Campos del formulario
