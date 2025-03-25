@@ -31,28 +31,26 @@ MESES_TRADUCIDOS = {
 def reemplazar_campos(template_path, reemplazos):
     doc = Document(template_path)
     
-    def reemplazar_texto_en_parrafo(parrafo, reemplazos):
-        texto_completo = "".join(run.text for run in parrafo.runs)
-        texto_modificado = texto_completo
-        
-        for key, value in reemplazos.items():
-            texto_modificado = texto_modificado.replace(key, value)
-        
-        if texto_completo != texto_modificado:
-            parrafo.clear()
-            run = parrafo.add_run(texto_modificado)
-            run.font.name = "Arial"
-            run.font.size = Pt(11)
-            run.bold = False
+    def reemplazar_texto_en_runs(runs, key, value):
+        texto_completo = "".join(run.text for run in runs)
+        if key in texto_completo:
+            texto_modificado = texto_completo.replace(key, value)
+            runs[0].text = texto_modificado
+            for i in range(1, len(runs)):
+                runs[i].text = ""
     
     for para in doc.paragraphs:
-        reemplazar_texto_en_parrafo(para, reemplazos)
+        for key, value in reemplazos.items():
+            if key in para.text:
+                reemplazar_texto_en_runs(para.runs, key, value)
     
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
-                for para in cell.paragraphs:
-                    reemplazar_texto_en_parrafo(para, reemplazos)
+                for key, value in reemplazos.items():
+                    if key in cell.text:
+                        for para in cell.paragraphs:
+                            reemplazar_texto_en_runs(para.runs, key, value)
     
     return doc
 
@@ -105,16 +103,16 @@ except ValueError:
 # Reemplazos si la fecha es válida
 if fecha_valida and st.button("Generar Documento"):
     reemplazos = {
-        "(INSERTENOMBRE)": nombre,
-        "(LOCALIZADOR)": localizador,
-        "(INSERTEFECHA)": fecha_formateada,
+        "(NOM)": nombre,
+        "(LOC)": localizador,
+        "(FEC)": fecha_formateada,
         "(DIA)": dia_traducido,
-        "(CIUDAD)": ciudad,
-        "(INSERTETRAYECTO)": trayecto,
-        "(HORAPRESENTACION)": hora_presentacion,
-        "(HORASALIDA)": hora_salida,
-        "(PUNTODEENCUENTRO)": punto_encuentro,
-        "(INSERTEDIRECCION)": direccion
+        "(CIU)": ciudad,
+        "(TRAY)": trayecto,
+        "(PRES)": hora_presentacion,
+        "(SAL)": hora_salida,
+        "(ENCU)": punto_encuentro,
+        "(DIRE)": direccion
     }
 
     plantilla = PLANTILLAS[idioma]
