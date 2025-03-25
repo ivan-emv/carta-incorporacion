@@ -6,7 +6,8 @@ import re
 import shutil
 import os
 from xml.etree import ElementTree as ET
-from datetime import datetime  # ✅ Se asegura la importación correcta
+from xml.dom import minidom
+from datetime import datetime  # ✅ Importación corregida
 
 # Diccionario para asociar idioma con plantilla
 PLANTILLAS = {
@@ -26,19 +27,16 @@ def reemplazar_texto_xml(docx_path, reemplazos):
     
     # Modificar el archivo XML del documento principal
     xml_path = os.path.join(temp_dir, "word", "document.xml")
-    tree = ET.parse(xml_path)
-    root = tree.getroot()
+    with open(xml_path, "r", encoding="utf-8") as f:
+        xml_content = f.read()
     
-    # Espacios de nombres en el XML de Word
-    ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+    # Reemplazar los textos asegurando que no se corrompa el XML
+    for key, value in reemplazos.items():
+        xml_content = xml_content.replace(key, value)
     
-    for elem in root.findall('.//w:t', ns):
-        for key, value in reemplazos.items():
-            if key in elem.text:
-                elem.text = elem.text.replace(key, value)
-    
-    # Guardar el archivo XML modificado
-    tree.write(xml_path, encoding="utf-8", xml_declaration=True)
+    # Escribir el archivo modificado
+    with open(xml_path, "w", encoding="utf-8") as f:
+        f.write(xml_content)
     
     # Volver a comprimir el .docx modificado
     with zipfile.ZipFile(temp_docx, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -69,7 +67,7 @@ direccion = st.text_area("Inserte Dirección")
 
 # Validación de fecha y obtención del día y mes en texto
 try:
-    fecha_obj = datetime.strptime(fecha_input, "%d/%m/%Y")  # ✅ Se corrige para que datetime esté correctamente definido
+    fecha_obj = datetime.strptime(fecha_input, "%d/%m/%Y")  # ✅ Ahora correctamente definido
     dia_semana = fecha_obj.strftime("%A")  # Día en inglés
     dia_num = fecha_obj.strftime("%d")
     mes_num = fecha_obj.strftime("%m")
