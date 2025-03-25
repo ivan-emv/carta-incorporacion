@@ -2,12 +2,9 @@ import streamlit as st
 from docx import Document
 from io import BytesIO
 import zipfile
-import re
 import shutil
 import os
-from xml.etree import ElementTree as ET
-from xml.dom import minidom
-from datetime import datetime  # ✅ Importación corregida
+from datetime import datetime
 
 # Diccionario para asociar idioma con plantilla
 PLANTILLAS = {
@@ -25,18 +22,21 @@ def reemplazar_texto_xml(docx_path, reemplazos):
     with zipfile.ZipFile(docx_path, 'r') as zip_ref:
         zip_ref.extractall(temp_dir)
     
-    # Modificar el archivo XML del documento principal
-    xml_path = os.path.join(temp_dir, "word", "document.xml")
-    with open(xml_path, "r", encoding="utf-8") as f:
-        xml_content = f.read()
-    
-    # Reemplazar los textos asegurando que no se corrompa el XML
-    for key, value in reemplazos.items():
-        xml_content = xml_content.replace(key, value)
-    
-    # Escribir el archivo modificado
-    with open(xml_path, "w", encoding="utf-8") as f:
-        f.write(xml_content)
+    # Buscar todos los archivos XML del documento
+    for root, _, files in os.walk(temp_dir):
+        for file in files:
+            if file.endswith(".xml"):
+                xml_path = os.path.join(root, file)
+                with open(xml_path, "r", encoding="utf-8") as f:
+                    xml_content = f.read()
+                
+                # Reemplazar los textos asegurando que no se corrompa el XML
+                for key, value in reemplazos.items():
+                    xml_content = xml_content.replace(key, value)
+                
+                # Escribir el archivo modificado
+                with open(xml_path, "w", encoding="utf-8") as f:
+                    f.write(xml_content)
     
     # Volver a comprimir el .docx modificado
     with zipfile.ZipFile(temp_docx, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -67,7 +67,7 @@ direccion = st.text_area("Inserte Dirección")
 
 # Validación de fecha y obtención del día y mes en texto
 try:
-    fecha_obj = datetime.strptime(fecha_input, "%d/%m/%Y")  # ✅ Ahora correctamente definido
+    fecha_obj = datetime.strptime(fecha_input, "%d/%m/%Y")
     dia_semana = fecha_obj.strftime("%A")  # Día en inglés
     dia_num = fecha_obj.strftime("%d")
     mes_num = fecha_obj.strftime("%m")
