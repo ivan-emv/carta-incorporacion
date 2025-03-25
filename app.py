@@ -103,16 +103,16 @@ except ValueError:
 # Reemplazos si la fecha es válida
 if fecha_valida and st.button("Generar Documento"):
     reemplazos = {
-        "(NOM)": nombre,
-        "(LOC)": localizador,
-        "(FEC)": fecha_formateada,
+        "(INSERTENOMBRE)": nombre,
+        "(LOCALIZADOR)": localizador,
+        "(INSERTEFECHA)": fecha_formateada,
         "(DIA)": dia_traducido,
-        "(CIU)": ciudad,
-        "(TRAY)": trayecto,
-        "(PRES)": hora_presentacion,
-        "(SAL)": hora_salida,
-        "(ENCU)": punto_encuentro,
-        "(DIRE)": direccion
+        "(CIUDAD)": ciudad,
+        "(INSERTETRAYECTO)": trayecto,
+        "(HORAPRESENTACION)": hora_presentacion,
+        "(HORASALIDA)": hora_salida,
+        "(PUNTODEENCUENTRO)": punto_encuentro,
+        "(INSERTEDIRECCION)": direccion
     }
 
     plantilla = PLANTILLAS[idioma]
